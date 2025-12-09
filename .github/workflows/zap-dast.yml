@@ -1,1 +1,21 @@
+name: OWASP ZAP Baseline Scan
 
+on:
+  schedule:
+    - cron: '0 2 * * *'   # daily scan
+  workflow_dispatch:      # manual run button
+
+jobs:
+  zap_scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.11.0
+        with:
+          target: "https://YOUR-SERVER-URL.com"  # 🔥 set your server URL
+          rules_file_name: ".zap/rules.tsv"
+          cmd_options: "-a"  # active scan
