@@ -3,7 +3,7 @@ import sys
 
 OWNER = "your-username"
 REPO = "your-repo"
-WORKFLOW = "zap-dast.yml"
+WORKFLOW = "soos-dast-scan.yml"
 TOKEN = "YOUR_GITHUB_TOKEN"  # store safely
 
 if len(sys.argv) < 2:
