@@ -2,7 +2,7 @@ name: AI Vulnerability Analysis
 
 on:
   workflow_run:
-    workflows: ["Security Mega Scan", "OWASP ZAP Full Scan"]  # UPDATE to match your real workflow names
+    workflows: ["OWASP ZAP Full Scan"]  # UPDATE to match your real workflow names
     types:
       - completed
 
