@@ -11,7 +11,7 @@ on:
 jobs:
   zap_full_scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 420   # 8 hours
+    timeout-minutes: 180   # 8 hours
 
     steps:
       - name: Checkout repo
