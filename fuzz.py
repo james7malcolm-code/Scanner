@@ -27,7 +27,7 @@ def main():
         sleep_time=0.05,
         receive_data_after_fuzz=True,
         fuzz_loggers=[
-            FileLogger("fuzz-output/fuzz-log.txt"),
+            FuzzLogger("fuzz-output/fuzz-log.txt"),
         ]
     )
 
