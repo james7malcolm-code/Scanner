@@ -2,6 +2,7 @@ import argparse
 from boofuzz import *
 import os
 from urllib.parse import urlparse
+from boofuzz import FuzzLoggerText, TCPSocketConnection  # explicit imports
 
 def main():
     parser = argparse.ArgumentParser()
@@ -27,7 +28,7 @@ def main():
         sleep_time=0.05,
         receive_data_after_fuzz=True,
         fuzz_loggers=[
-            FuzzLogger("fuzz-output/fuzz-log.txt"),
+            FuzzLoggerText(file_name="fuzz-output/fuzz-log.txt"),  # FIXED
         ]
     )
 
@@ -36,9 +37,8 @@ def main():
     ######################################
     s_initialize("HTTP_FUZZ")
 
-    # HTTP Verb fuzzing (useful for Python frameworks)
     if s_block_start("Request-Line"):
-        s_string("GET", fuzzable=True)  # Also tries POST, PUT, PATCH, etc
+        s_string("GET", fuzzable=True)
         s_delim(" ")
         s_string(endpoint, fuzzable=True)
         s_delim(" ")
@@ -59,7 +59,6 @@ def main():
     header("Content-Type", fuzz=True)
     header("Content-Length", fuzz=False)
 
-    # Blank line separates headers from body
     s_static("\r\n")
 
     ######################################
@@ -67,10 +66,8 @@ def main():
     ######################################
     if s_block_start("JSON-Body"):
         s_string("{", fuzzable=False)
-
         s_string("\"key\":", fuzzable=False)
         s_string("\"FUZZDATA\"", fuzzable=True)
-
         s_string("}", fuzzable=False)
     s_block_end("JSON-Body")
 
