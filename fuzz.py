@@ -1,58 +1,83 @@
 import argparse
 from boofuzz import *
 import os
+from urllib.parse import urlparse
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--url", required=True, help="Target HTTP URL")
     args = parser.parse_args()
 
-    url = args.url.strip("/")
-    host = url.split("//")[1].split("/")[0]
-    endpoint = "/" + "/".join(url.split("//")[1].split("/")[1:])
+    parsed = urlparse(args.url)
+    host = parsed.hostname
+    port = parsed.port if parsed.port else (443 if parsed.scheme == "https" else 80)
+    endpoint = parsed.path if parsed.path else "/"
 
     os.makedirs("fuzz-output", exist_ok=True)
 
-    # Boofuzz session
     session = Session(
         target=Target(
             connection=SocketConnection(
                 host=host,
-                port=80,
+                port=port,
                 proto="tcp"
             )
         ),
         crash_threshold_request=1,
-        sleep_time=0.1,
+        sleep_time=0.05,
+        receive_data_after_fuzz=True,
+        fuzz_loggers=[
+            FileLogger("fuzz-output/fuzz-log.txt"),
+        ]
     )
 
-    s_initialize("HTTP Fuzz")
+    ######################################
+    # REQUEST BLOCK
+    ######################################
+    s_initialize("HTTP_FUZZ")
 
+    # HTTP Verb fuzzing (useful for Python frameworks)
     if s_block_start("Request-Line"):
-        s_string("GET", fuzzable=True)
-        s_delim(" ", fuzzable=False)
+        s_string("GET", fuzzable=True)  # Also tries POST, PUT, PATCH, etc
+        s_delim(" ")
         s_string(endpoint, fuzzable=True)
-        s_delim(" ", fuzzable=False)
+        s_delim(" ")
         s_string("HTTP/1.1", fuzzable=False)
         s_static("\r\n")
     s_block_end("Request-Line")
 
-    s_string("Host", fuzzable=False)
-    s_delim(": ")
-    s_string(host, fuzzable=True)
+    # Standard headers
+    def header(name, fuzz=True):
+        s_string(name, fuzzable=False)
+        s_delim(": ")
+        s_string("fuzz", fuzzable=fuzz)
+        s_static("\r\n")
+
+    header("Host", fuzz=False)
+    header("User-Agent", fuzz=True)
+    header("X-Forwarded-For", fuzz=True)
+    header("Content-Type", fuzz=True)
+    header("Content-Length", fuzz=False)
+
+    # Blank line separates headers from body
     s_static("\r\n")
 
-    s_string("User-Agent", fuzzable=False)
-    s_delim(": ")
-    s_string("BoofuzzFuzzer", fuzzable=True)
-    s_static("\r\n")
+    ######################################
+    # JSON BODY FUZZ
+    ######################################
+    if s_block_start("JSON-Body"):
+        s_string("{", fuzzable=False)
 
-    s_static("\r\n")
+        s_string("\"key\":", fuzzable=False)
+        s_string("\"FUZZDATA\"", fuzzable=True)
 
-    session.connect(s_get("HTTP Fuzz"))
+        s_string("}", fuzzable=False)
+    s_block_end("JSON-Body")
+
+    session.connect(s_get("HTTP_FUZZ"))
     session.fuzz()
 
-    print("Fuzzing finished. Logs stored in fuzz-output/")
+    print("Fuzzing finished. Logs saved in fuzz-output/")
 
 if __name__ == "__main__":
     main()
