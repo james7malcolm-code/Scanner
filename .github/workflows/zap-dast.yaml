@@ -11,6 +11,7 @@ on:
 jobs:
   zap_full_scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 420   # 8 hours
 
     steps:
       - name: Checkout repo
@@ -22,9 +23,20 @@ jobs:
           target: "${{ github.event.inputs.target_url }}"
           cmd_options: "-a"
 
-      # Save ZAP report
+      # Try to upload report (normal case)
       - name: Upload ZAP HTML Report
         uses: actions/upload-artifact@v4
         with:
           name: zap-report
           path: zap-report.html
+
+      # Fallback: ALWAYS run this step even if timeout occurs
+      - name: Always Save Report (Timeout Safe)
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report-timeout
+          path: |
+            zap-report.html
+            owasp-zap*/**/*
+          if-no-files-found: ignore
